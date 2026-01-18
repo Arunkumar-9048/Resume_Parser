@@ -1,0 +1,23 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.log
+*.sqlite3
+db.sqlite3
+
+# Django Generated Files
+media/
+staticfiles/
+local_settings.py
+
+# Resume Uploads & Parsed Data
+uploads/
+resumes/
+parsed_resumes/
+temp_resumes/
+*.pdf
+*.doc
+*.docx
+

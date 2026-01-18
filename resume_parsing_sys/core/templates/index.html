@@ -1,0 +1,1061 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Parsing System | HR Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">
+    <style>
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .step-indicator.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .step-indicator.inactive {
+            background-color: #e5e7eb;
+            color: #6b7280;
+        }
+
+        .step-indicator.completed {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .auto-filled {
+            background-color: #f0f9ff;
+            border-left-color: #3b82f6;
+        }
+
+        .auto-filled-badge {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+
+        .drag-active {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+        }
+
+        .success-message {
+            background-color: #d1fae5;
+            border-color: #10b981;
+        }
+
+        .error-message {
+            background-color: #fee2e2;
+            border-color: #ef4444;
+        }
+
+        .loading-spinner {
+            border-top-color: #3b82f6;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="mb-10">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Resume Parsing System</h1>
+            <p class="text-gray-600 mt-2">Upload resumes to automatically extract candidate information and create
+                employee records</p>
+
+            <!-- Step indicators -->
+            <div class="flex items-center justify-between mt-8 mb-6">
+                <div class="flex items-center">
+                    <div
+                        class="step-indicator active rounded-full h-10 w-10 flex items-center justify-center font-semibold text-lg">
+                        1
+                    </div>
+                    <div class="ml-3">
+                        <p class="font-medium text-gray-800">Upload Resume</p>
+                        <p class="text-sm text-gray-500">PDF, DOC, or DOCX files</p>
+                    </div>
+                </div>
+
+                <div class="h-1 flex-1 bg-gray-200 mx-4"></div>
+
+                <div class="flex items-center">
+                    <div
+                        class="step-indicator inactive rounded-full h-10 w-10 flex items-center justify-center font-semibold text-lg">
+                        2
+                    </div>
+                    <div class="ml-3">
+                        <p class="font-medium text-gray-500">Review & Edit</p>
+                        <p class="text-sm text-gray-400">Verify parsed details</p>
+                    </div>
+                </div>
+
+                <div class="h-1 flex-1 bg-gray-200 mx-4"></div>
+
+                <div class="flex items-center">
+                    <div
+                        class="step-indicator inactive rounded-full h-10 w-10 flex items-center justify-center font-semibold text-lg">
+                        3
+                    </div>
+                    <div class="ml-3">
+                        <p class="font-medium text-gray-500">Submit</p>
+                        <p class="text-sm text-gray-400">Create employee record</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Upload & Parsing Status -->
+            <div class="lg:col-span-1">
+                <!-- Resume Upload Card -->
+                <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Upload Resume</h2>
+
+                    <!-- Drag & Drop Area -->
+                    <div id="drop-area"
+                        class="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center transition-all duration-200 mb-4">
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="bg-blue-50 p-4 rounded-full mb-4">
+                                <i class="fas fa-file-upload text-blue-500 text-2xl"></i>
+                            </div>
+                            <p class="font-medium text-gray-700 mb-1">Drag & drop your resume here</p>
+                            <p class="text-gray-500 text-sm mb-4">Supports PDF, DOC, DOCX files (Max 5MB)</p>
+                            <button id="browse-btn"
+                                class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-5 rounded-lg transition duration-200">
+                                Browse Files
+                            </button>
+                        </div>
+                        <input type="file" id="file-input" class="hidden" accept=".pdf,.doc,.docx">
+                    </div>
+
+                    <!-- Selected File Info -->
+                    <div id="file-info" class="hidden mb-4">
+                        <div class="flex items-center justify-between bg-gray-50 p-4 rounded-lg">
+                            <div class="flex items-center">
+                                <i class="fas fa-file text-blue-500 text-lg mr-3"></i>
+                                <div>
+                                    <p id="file-name" class="font-medium text-gray-800"></p>
+                                    <p id="file-size" class="text-sm text-gray-500"></p>
+                                </div>
+                            </div>
+                            <button id="remove-file" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Upload Button -->
+                    <button id="upload-btn"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-cloud-upload-alt mr-2"></i> Upload & Parse Resume
+                    </button>
+
+                    <!-- File Validation Error -->
+                    <div id="file-error" class="hidden error-message border rounded-lg p-3 mt-4 text-sm">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span id="error-text"></span>
+                    </div>
+                </div>
+
+                <!-- Parsing Status Card -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Parsing Status</h2>
+
+                    <!-- Status Steps -->
+                    <div class="space-y-6">
+                        <!-- Upload Status -->
+                        <div class="flex items-start">
+                            <div id="upload-status-icon"
+                                class="rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-gray-100">
+                                <i class="fas fa-cloud-upload-alt text-gray-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Upload</p>
+                                <p id="upload-status-text" class="text-sm text-gray-500">Ready to upload resume</p>
+                            </div>
+                        </div>
+
+                        <!-- Parsing Status -->
+                        <div class="flex items-start">
+                            <div id="parsing-status-icon"
+                                class="rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-gray-100">
+                                <i class="fas fa-cogs text-gray-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Parsing</p>
+                                <p id="parsing-status-text" class="text-sm text-gray-500">Waiting for upload</p>
+                            </div>
+                        </div>
+
+                        <!-- Complete Status -->
+                        <div class="flex items-start">
+                            <div id="complete-status-icon"
+                                class="rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-gray-100">
+                                <i class="fas fa-check text-gray-400"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-gray-800">Complete</p>
+                                <p id="complete-status-text" class="text-sm text-gray-500">Not yet completed</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading Spinner (Hidden by default) -->
+                    <div id="loading-spinner" class="hidden mt-6">
+                        <div class="flex items-center justify-center">
+                            <div class="loading-spinner h-12 w-12 rounded-full border-4 border-gray-200"></div>
+                        </div>
+                        <p class="text-center text-gray-600 mt-3">Parsing resume, please wait...</p>
+                    </div>
+
+                    <!-- Parsing Error (Hidden by default) -->
+                    <div id="parsing-error" class="hidden error-message border rounded-lg p-4 mt-6">
+                        <div class="flex items-start">
+                            <i class="fas fa-exclamation-triangle text-red-500 mt-0.5 mr-3"></i>
+                            <div>
+                                <p class="font-medium text-red-700 mb-1">Parsing Failed</p>
+                                <p id="parsing-error-text" class="text-sm text-red-600">Unable to parse the resume file.
+                                    Please try another file or enter details manually.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Employee Form -->
+            <div class="lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800">Employee Information</h2>
+                        <span id="form-status-badge"
+                            class="bg-gray-100 text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full">
+                            Awaiting Resume Data
+                        </span>
+                    </div>
+
+                    <p class="text-gray-600 mb-6">This form will be auto-filled with parsed resume data. Please review
+                        and edit all fields before submission.</p>
+
+                    <!-- Employee Form -->
+                    <form id="employee-form" class="space-y-6">
+                        {% csrf_token %}
+                        <!-- Full Name -->
+                        <div class="form-group">
+                            <label for="full-name" class="block text-gray-700 font-medium mb-2">
+                                Full Name <span class="text-red-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="text" id="full-name" name="full-name"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                    required>
+                                <div id="full-name-badge"
+                                    class="auto-filled-badge hidden absolute right-3 top-3 text-xs font-medium px-2 py-1 rounded">
+                                    Auto-filled
+                                </div>
+                            </div>
+                            <p class="text-red-500 text-sm mt-1 hidden" id="full-name-error">Full name is required</p>
+                        </div>
+
+                        <!-- Email & Phone -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="form-group">
+                                <label for="email" class="block text-gray-700 font-medium mb-2">
+                                    Email Address <span class="text-red-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <input type="email" id="email" name="email"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                        required>
+                                    <div id="email-badge"
+                                        class="auto-filled-badge hidden absolute right-3 top-3 text-xs font-medium px-2 py-1 rounded">
+                                        Auto-filled
+                                    </div>
+                                </div>
+                                <p class="text-red-500 text-sm mt-1 hidden" id="email-error">Valid email is required</p>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="phone" class="block text-gray-700 font-medium mb-2">Phone Number</label>
+                                <div class="relative">
+                                    <input type="tel" id="phone" name="phone"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                    <div id="phone-badge"
+                                        class="auto-filled-badge hidden absolute right-3 top-3 text-xs font-medium px-2 py-1 rounded">
+                                        Auto-filled
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location -->
+                        <div class="form-group">
+                            <label for="location" class="block text-gray-700 font-medium mb-2">Location</label>
+                            <div class="relative">
+                                <input type="text" id="location" name="location"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                <div id="location-badge"
+                                    class="auto-filled-badge hidden absolute right-3 top-3 text-xs font-medium px-2 py-1 rounded">
+                                    Auto-filled
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Work Experience -->
+                        <div class="form-group">
+                            <label for="experience" class="block text-gray-700 font-medium mb-2">Work Experience</label>
+                            <div class="relative">
+                                <textarea id="experience" name="experience" rows="5"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"></textarea>
+                                <div id="experience-badge"
+                                    class="auto-filled-badge hidden absolute right-3 top-3 text-xs font-medium px-2 py-1 rounded">
+                                    Auto-filled
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- LinkedIn Profile -->
+                        <div class="form-group">
+                            <label for="linkedin" class="block text-gray-700 font-medium mb-2">LinkedIn Profile
+                                URL</label>
+                            <div class="relative">
+                                <input type="url" id="linkedin" name="linkedin"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition">
+                                <div id="linkedin-badge"
+                                    class="auto-filled-badge hidden absolute right-3 top-3 text-xs font-medium px-2 py-1 rounded">
+                                    Auto-filled
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Additional Notes -->
+                        <div class="form-group">
+                            <label for="notes" class="block text-gray-700 font-medium mb-2">Additional Notes (HR
+                                Use)</label>
+                            <textarea id="notes" name="notes" rows="3"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                                placeholder="Add any additional information about the candidate..."></textarea>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="pt-4 border-t border-gray-200">
+                            <div class="flex flex-col md:flex-row justify-between items-center">
+                                <div class="mb-4 md:mb-0">
+                                    <p id="form-message" class="text-sm"></p>
+                                </div>
+                                <div class="flex space-x-4">
+                                    <button type="button" id="reset-form"
+                                        class="px-5 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition">
+                                        Reset Form
+                                    </button>
+                                    <button type="submit" id="submit-btn"
+                                        class="bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-6 rounded-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                                        <i class="fas fa-user-plus mr-2"></i> Create Employee Record
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Success Message (Hidden by default) -->
+                    <div id="success-message" class="hidden success-message border rounded-lg p-4 mt-6">
+                        <div class="flex items-start">
+                            <i class="fas fa-check-circle text-green-500 mt-0.5 mr-3 text-xl"></i>
+                            <div>
+                                <p class="font-medium text-green-800 mb-1">Employee Created Successfully!</p>
+                                <p id="success-details" class="text-sm text-green-700">Employee record has been created
+                                    and saved to the database.</p>
+                                <button id="create-another"
+                                    class="mt-3 text-sm bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition">
+                                    <i class="fas fa-plus mr-1"></i> Create Another Employee
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="mt-12 pt-6 border-t border-gray-200 text-center text-gray-500 text-sm">
+            <p>Resume Parsing System &copy; 2023 HR Portal. For internal use only.</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const browseBtn = document.getElementById('browse-btn');
+        const uploadBtn = document.getElementById('upload-btn');
+        const fileInfo = document.getElementById('file-info');
+        const fileName = document.getElementById('file-name');
+        const fileSize = document.getElementById('file-size');
+        const removeFileBtn = document.getElementById('remove-file');
+        const fileError = document.getElementById('file-error');
+        const errorText = document.getElementById('error-text');
+
+        // Parsing status elements
+        const uploadStatusIcon = document.getElementById('upload-status-icon');
+        const uploadStatusText = document.getElementById('upload-status-text');
+        const parsingStatusIcon = document.getElementById('parsing-status-icon');
+        const parsingStatusText = document.getElementById('parsing-status-text');
+        const completeStatusIcon = document.getElementById('complete-status-icon');
+        const completeStatusText = document.getElementById('complete-status-text');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const parsingError = document.getElementById('parsing-error');
+        const parsingErrorText = document.getElementById('parsing-error-text');
+
+        // Form elements
+        const employeeForm = document.getElementById('employee-form');
+        const fullNameInput = document.getElementById('full-name');
+        const emailInput = document.getElementById('email');
+        const phoneInput = document.getElementById('phone');
+        const locationInput = document.getElementById('location');
+        const experienceInput = document.getElementById('experience');
+        const linkedinInput = document.getElementById('linkedin');
+        const submitBtn = document.getElementById('submit-btn');
+        const resetFormBtn = document.getElementById('reset-form');
+        const formStatusBadge = document.getElementById('form-status-badge');
+        const successMessage = document.getElementById('success-message');
+        const successDetails = document.getElementById('success-details');
+        const createAnotherBtn = document.getElementById('create-another');
+        const formMessage = document.getElementById('form-message');
+
+        // Auto-filled badges
+        const autoFilledBadges = {
+            fullName: document.getElementById('full-name-badge'),
+            email: document.getElementById('email-badge'),
+            phone: document.getElementById('phone-badge'),
+            location: document.getElementById('location-badge'),
+            experience: document.getElementById('experience-badge'),
+            linkedin: document.getElementById('linkedin-badge')
+        };
+
+        // Form validation elements
+        const nameError = document.getElementById('full-name-error');
+        const emailError = document.getElementById('email-error');
+
+        // Global state
+        let selectedFile = null;
+        let isParsing = false;
+        let isSubmitting = false;
+        let parsedData = null;
+
+        // Allowed file types and max size (5MB)
+        const ALLOWED_TYPES = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
+
+        // Step indicators
+        const stepIndicators = document.querySelectorAll('.step-indicator');
+
+        // ==================== EVENT LISTENERS ====================
+
+        // Browse button click
+        browseBtn.addEventListener('click', () => fileInput.click());
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFileSelection(e.target.files[0]);
+            }
+        });
+
+        // Drag and drop events
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, highlightDropArea, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, unhighlightDropArea, false);
+        });
+
+        function highlightDropArea() {
+            dropArea.classList.add('drag-active');
+        }
+
+        function unhighlightDropArea() {
+            dropArea.classList.remove('drag-active');
+        }
+
+        // Drop event
+        dropArea.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const file = dt.files[0];
+            handleFileSelection(file);
+        });
+
+        // Remove file button
+        removeFileBtn.addEventListener('click', () => {
+            clearFileSelection();
+        });
+
+        // Upload button
+        uploadBtn.addEventListener('click', uploadAndParseResume);
+
+        // Form submission
+        employeeForm.addEventListener('submit', submitEmployeeForm);
+
+        // Reset form button
+        resetFormBtn.addEventListener('click', resetForm);
+
+        // Create another employee button
+        createAnotherBtn.addEventListener('click', resetAll);
+
+        // ==================== FUNCTIONS ====================
+
+        /**
+         * Handle file selection and validation
+         */
+        function handleFileSelection(file) {
+            // Reset any previous errors
+            hideFileError();
+
+            // Validate file
+            if (!file) {
+                showFileError('Please select a file');
+                return;
+            }
+
+            // Check file type
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                showFileError('File type not supported. Please upload PDF, DOC, or DOCX files only.');
+                return;
+            }
+
+            // Check file size
+            if (file.size > MAX_FILE_SIZE) {
+                showFileError(`File size exceeds 5MB limit. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB.`);
+                return;
+            }
+
+            // File is valid
+            selectedFile = file;
+
+            // Display file info
+            fileName.textContent = file.name;
+            fileSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+            fileInfo.classList.remove('hidden');
+
+            // Update upload button
+            uploadBtn.disabled = false;
+
+            // Update status
+            updateUploadStatus('ready', 'File selected and ready to upload');
+        }
+
+        /**
+         * Clear the selected file
+         */
+        function clearFileSelection() {
+            selectedFile = null;
+            fileInput.value = '';
+            fileInfo.classList.add('hidden');
+            uploadBtn.disabled = false;
+            hideFileError();
+
+            // Update status
+            updateUploadStatus('idle', 'Ready to upload resume');
+        }
+
+        /**
+         * Show file validation error
+         */
+        function showFileError(message) {
+            errorText.textContent = message;
+            fileError.classList.remove('hidden');
+            uploadBtn.disabled = true;
+        }
+
+        /**
+         * Hide file validation error
+         */
+        function hideFileError() {
+            fileError.classList.add('hidden');
+        }
+
+        /**
+         * Update upload status UI
+         */
+        function updateUploadStatus(status, message) {
+            switch (status) {
+                case 'idle':
+                    uploadStatusIcon.innerHTML = '<i class="fas fa-cloud-upload-alt text-gray-400"></i>';
+                    uploadStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-gray-100';
+                    break;
+                case 'ready':
+                    uploadStatusIcon.innerHTML = '<i class="fas fa-file text-blue-500"></i>';
+                    uploadStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-blue-100';
+                    break;
+                case 'uploading':
+                    uploadStatusIcon.innerHTML = '<i class="fas fa-spinner fa-spin text-blue-500"></i>';
+                    uploadStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-blue-100';
+                    break;
+                case 'success':
+                    uploadStatusIcon.innerHTML = '<i class="fas fa-check text-green-500"></i>';
+                    uploadStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-green-100';
+                    break;
+                case 'error':
+                    uploadStatusIcon.innerHTML = '<i class="fas fa-times text-red-500"></i>';
+                    uploadStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-red-100';
+                    break;
+            }
+
+            uploadStatusText.textContent = message;
+        }
+
+        /**
+         * Update parsing status UI
+         */
+        function updateParsingStatus(status, message) {
+            switch (status) {
+                case 'idle':
+                    parsingStatusIcon.innerHTML = '<i class="fas fa-cogs text-gray-400"></i>';
+                    parsingStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-gray-100';
+                    break;
+                case 'parsing':
+                    parsingStatusIcon.innerHTML = '<i class="fas fa-spinner fa-spin text-blue-500"></i>';
+                    parsingStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-blue-100';
+                    break;
+                case 'success':
+                    parsingStatusIcon.innerHTML = '<i class="fas fa-check text-green-500"></i>';
+                    parsingStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-green-100';
+                    break;
+                case 'error':
+                    parsingStatusIcon.innerHTML = '<i class="fas fa-times text-red-500"></i>';
+                    parsingStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-red-100';
+                    break;
+            }
+
+            parsingStatusText.textContent = message;
+        }
+
+        /**
+         * Update complete status UI
+         */
+        function updateCompleteStatus(status, message) {
+            switch (status) {
+                case 'idle':
+                    completeStatusIcon.innerHTML = '<i class="fas fa-check text-gray-400"></i>';
+                    completeStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-gray-100';
+                    break;
+                case 'success':
+                    completeStatusIcon.innerHTML = '<i class="fas fa-check text-green-500"></i>';
+                    completeStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-green-100';
+                    break;
+                case 'error':
+                    completeStatusIcon.innerHTML = '<i class="fas fa-times text-red-500"></i>';
+                    completeStatusIcon.className = 'rounded-full h-8 w-8 flex items-center justify-center mr-3 bg-red-100';
+                    break;
+            }
+
+            completeStatusText.textContent = message;
+        }
+
+        /**
+         * Upload file to backend API for parsing
+         */
+        async function uploadAndParseResume() {
+            if (!selectedFile || isParsing) return;
+
+            // Reset previous parsing error
+            parsingError.classList.add('hidden');
+
+            // Update UI states
+            isParsing = true;
+            uploadBtn.disabled = true;
+            loadingSpinner.classList.remove('hidden');
+
+            // Update status indicators
+            updateUploadStatus('uploading', 'Uploading resume file...');
+            updateParsingStatus('parsing', 'Parsing resume content...');
+
+            // Update step indicators
+            updateStepIndicators(1);
+
+            try {
+                // preparing the file to send to backend
+                const formData = new FormData();
+                formData.append('resume', selectedFile)
+
+                const response = await fetch('/api/parse-resume/', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Server returned ${response.status} ${response.statusText}`);
+                }
+
+                parsedData = await response.json();
+
+                // Update UI for successful parsing
+                updateUploadStatus('success', 'Resume uploaded successfully');
+                updateParsingStatus('success', 'Resume parsed successfully');
+                updateCompleteStatus('success', 'Ready to review employee details');
+
+                // Populate form with parsed data
+                populateFormWithParsedData(parsedData);
+
+                // Update form status
+                formStatusBadge.textContent = 'Auto-filled from Resume';
+                formStatusBadge.className = 'bg-blue-100 text-blue-800 text-xs font-medium px-3 py-1.5 rounded-full';
+
+                // Update step indicators
+                updateStepIndicators(2);
+
+                // Show success message in form
+                showFormMessage('Form auto-filled with parsed resume data. Please review and edit before submission.', 'text-green-600');
+
+            } catch (error) {
+                // Handle parsing error
+                console.error('Parsing error:', error);
+
+                // Update status indicators
+                updateUploadStatus('error', 'Upload failed');
+                updateParsingStatus('error', 'Parsing failed');
+                updateCompleteStatus('error', 'Failed to parse resume');
+
+                // Show error message
+                parsingErrorText.textContent = error.message || 'Unable to parse the resume file. Please try another file or enter details manually.';
+                parsingError.classList.remove('hidden');
+
+            } finally {
+                // Reset loading state
+                isParsing = false;
+                loadingSpinner.classList.add('hidden');
+                uploadBtn.disabled = false;
+            }
+        }
+
+        /**
+         * Populate form with parsed data
+         */
+        function populateFormWithParsedData(data) {
+            // Store parsed data for reference
+            parsedData = data;
+
+            // Populate form fields
+            fullNameInput.value = data.full_name || '';
+            emailInput.value = data.email || '';
+            phoneInput.value = data.phone || '';
+            locationInput.value = data.location || '';
+            experienceInput.value = data.experience || '';
+            linkedinInput.value = data.linkedin || '';
+
+            // Show auto-filled badges for fields that have data
+            if (data.full_name) {
+                autoFilledBadges.fullName.classList.remove('hidden');
+                fullNameInput.parentElement.classList.add('auto-filled');
+            }
+
+            if (data.email) {
+                autoFilledBadges.email.classList.remove('hidden');
+                emailInput.parentElement.classList.add('auto-filled');
+            }
+
+            if (data.phone) {
+                autoFilledBadges.phone.classList.remove('hidden');
+                phoneInput.parentElement.classList.add('auto-filled');
+            }
+
+            if (data.location) {
+                autoFilledBadges.location.classList.remove('hidden');
+                locationInput.parentElement.classList.add('auto-filled');
+            }
+
+            if (data.experience) {
+                autoFilledBadges.experience.classList.remove('hidden');
+                experienceInput.parentElement.classList.add('auto-filled');
+            }
+
+            if (data.linkedin) {
+                autoFilledBadges.linkedin.classList.remove('hidden');
+                linkedinInput.parentElement.classList.add('auto-filled');
+            }
+
+            // Enable form
+            employeeForm.querySelectorAll('input, textarea').forEach(element => {
+                element.disabled = false;
+            });
+
+            // Enable submit button
+            submitBtn.disabled = false;
+        }
+
+        /**
+         * Update step indicators
+         */
+        function updateStepIndicators(activeStep) {
+            stepIndicators.forEach((indicator, index) => {
+                // Reset classes
+                indicator.classList.remove('active', 'completed', 'inactive');
+
+                if (index + 1 < activeStep) {
+                    // Previous steps - completed
+                    indicator.classList.add('completed');
+                    indicator.innerHTML = '<i class="fas fa-check"></i>';
+                } else if (index + 1 === activeStep) {
+                    // Current step - active
+                    indicator.classList.add('active');
+                    indicator.textContent = index + 1;
+                } else {
+                    // Future steps - inactive
+                    indicator.classList.add('inactive');
+                    indicator.textContent = index + 1;
+                }
+            });
+        }
+
+        /**
+         * Show form message
+         */
+        function showFormMessage(message, className = 'text-gray-600') {
+            formMessage.textContent = message;
+            formMessage.className = `text-sm ${className}`;
+        }
+
+        /**
+         * Clear form message
+         */
+        function clearFormMessage() {
+            formMessage.textContent = '';
+            formMessage.className = 'text-sm';
+        }
+
+        /**
+         * Validate form
+         */
+        function validateForm() {
+            let isValid = true;
+
+            // Clear previous errors
+            nameError.classList.add('hidden');
+            emailError.classList.add('hidden');
+
+            // Validate full name
+            if (!fullNameInput.value.trim()) {
+                nameError.classList.remove('hidden');
+                isValid = false;
+            }
+
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailInput.value.trim())) {
+                emailError.classList.remove('hidden');
+                isValid = false;
+            }
+
+            return isValid;
+        }
+
+        function getCSRFToken() {
+            let cookieValue = null;
+            const name = 'csrftoken';
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    cookie = cookie.trim();
+                    if (cookie.startsWith(name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+
+
+        /**
+         * Submit employee form
+         */
+        async function submitEmployeeForm(e) {
+            e.preventDefault();
+
+            if (isSubmitting) return;
+
+            // Validate form
+            if (!validateForm()) {
+                showFormMessage('Please fix the errors in the form before submitting.', 'text-red-600');
+                return;
+            }
+
+            // Update UI states
+            isSubmitting = true;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Creating Employee...';
+
+            // Prepare form data
+            const formData = {
+                full_name: fullNameInput.value.trim(),
+                email: emailInput.value.trim(),
+                phone: phoneInput.value.trim(),
+                location: locationInput.value.trim(),
+                work_experience: experienceInput.value.trim(),
+                linkedin_url: linkedinInput.value.trim(),
+                notes: document.getElementById('notes').value.trim(),
+                source: parsedData ? 'resume_upload' : 'manual_entry'
+            };
+
+            console.log('csrf: ', getCSRFToken());
+            console.log('formdata: ', formData);
+
+            try {
+                const response = await fetch('/api/create-employee/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCSRFToken()
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    // If backend sends field-specific errors
+                    if (result.errors) {
+                        // Example: duplicate email
+                        if (result.errors.email) {
+                            throw new Error(result.errors.email[0]);
+                        } else {
+                            throw new Error(Object.values(result.errors)[0][0]);
+                        }
+                    } else {
+                        throw new Error(result.message || 'Failed to create employee');
+                    }
+                }
+
+                // Show success message
+                successDetails.textContent = `${formData.full_name} has been added to the system with ID: ${result.id}.`;
+                successMessage.classList.remove('hidden');
+
+                // Hide form
+                employeeForm.classList.add('hidden');
+
+                // Update step indicators
+                updateStepIndicators(3);
+
+                // Update complete status
+                updateCompleteStatus('success', 'Employee record created');
+
+            } catch (error) {
+                // Handle submission error
+                console.error('Submission error:', error);
+
+                // Show backend error message (like duplicate email)
+                showFormMessage(error.message, 'text-red-600');
+
+                // Reset button state
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i> Create Employee Record';
+                isSubmitting = false;
+            }
+        }
+
+        /**
+         * Reset form to initial state
+         */
+        function resetForm() {
+            // Clear form fields
+            employeeForm.reset();
+
+            // Hide auto-filled badges
+            Object.values(autoFilledBadges).forEach(badge => {
+                badge.classList.add('hidden');
+            });
+
+            // Remove auto-filled styling
+            const allInputs = employeeForm.querySelectorAll('input, textarea');
+            allInputs.forEach(input => {
+                input.parentElement.classList.remove('auto-filled');
+            });
+
+            // Clear parsed data
+            parsedData = null;
+
+            // Reset form status
+            formStatusBadge.textContent = 'Awaiting Resume Data';
+            formStatusBadge.className = 'bg-gray-100 text-gray-800 text-xs font-medium px-3 py-1.5 rounded-full';
+
+            // Clear messages
+            clearFormMessage();
+
+            // Enable upload button
+            uploadBtn.disabled = false;
+        }
+
+        /**
+         * Reset entire system to initial state
+         */
+        function resetAll() {
+            // Reset form
+            resetForm();
+
+            // Clear file selection
+            clearFileSelection();
+
+            // Hide success message
+            successMessage.classList.add('hidden');
+
+            // Show form
+            employeeForm.classList.remove('hidden');
+
+            // Reset status indicators
+            updateUploadStatus('idle', 'Ready to upload resume');
+            updateParsingStatus('idle', 'Waiting for upload');
+            updateCompleteStatus('idle', 'Not yet completed');
+
+            // Reset step indicators
+            updateStepIndicators(1);
+
+            // Reset submit button
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i> Create Employee Record';
+            isSubmitting = false;
+
+            // Clear any parsing errors
+            parsingError.classList.add('hidden');
+        }
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Disable form initially (waiting for parsed data)
+            employeeForm.querySelectorAll('input, textarea').forEach(element => {
+                element.disabled = true;
+            });
+
+            // Disable submit button initially
+            submitBtn.disabled = true;
+
+            // Set initial step indicators
+            updateStepIndicators(1);
+        });
+    </script>
+</body>
+
+</html>
