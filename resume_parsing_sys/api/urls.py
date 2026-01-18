@@ -22,5 +22,8 @@ urlpatterns = [
 # write your urls here.
 path('parse-resume/',ParseResumeAPIView.as_view(),name='parse resume'),
 path('create-employee/',EmployeeCreateAPIView.as_view(),name='create employee'),
+path('employees/', EmployeeListAPIView.as_view(), name='employee-list'),
+path('employees/<int:pk>/', EmployeeDetailAPIView.as_view(), name='employee-detail'),
+path('delete-employee/<int:id>/', EmployeeDeleteAPIView.as_view(), name='delete-employee'),
 
 ]

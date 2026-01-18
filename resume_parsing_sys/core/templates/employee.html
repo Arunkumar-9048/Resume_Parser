@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Database</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        .employee-row:hover { background-color: #f9fafb; }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen">
+
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+
+    <!-- Header -->
+    <header class="mb-8 flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Employee Database</h1>
+            <p class="text-gray-600 mt-1">Manage all parsed employee records</p>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="text-gray-600">
+                <span id="employee-count" class="font-semibold">0</span> employees
+            </span>
+            <button id="refresh-btn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+            </button>
+        </div>
+    </header>
+
+    <!-- Table Card -->
+    <div class="bg-white rounded-xl shadow border">
+
+        <!-- Table Header -->
+        <div class="px-6 py-4 border-b flex justify-between items-center">
+            <h2 class="text-lg font-semibold">All Employees</h2>
+            <input id="search-input"
+                   type="text"
+                   placeholder="Search employees..."
+                   class="border rounded-lg px-3 py-2 w-64 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="p-10 text-center text-gray-500">
+            Loading employees...
+        </div>
+
+        <!-- Empty -->
+        <div id="empty" class="hidden p-10 text-center text-gray-500">
+            No employees found.
+        </div>
+
+        <!-- Table -->
+        <div id="table-wrapper" class="hidden overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 text-xs uppercase text-gray-500">
+                    <tr>
+                        <th class="px-6 py-3 text-left">ID</th>
+                        <th class="px-6 py-3 text-left">Full Name</th>
+                        <th class="px-6 py-3 text-left">Email</th>
+                        <th class="px-6 py-3 text-left">Phone</th>
+                        <th class="px-6 py-3 text-left">Location</th>
+                        <th class="px-6 py-3 text-left">Source</th>
+                        <th class="px-6 py-3 text-left">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body" class="divide-y"></tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl w-full max-w-2xl p-6">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-xl font-semibold">Employee Details</h3>
+            <button onclick="closeModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div id="modal-content" class="grid grid-cols-2 gap-4 text-sm"></div>
+
+        <div class="mt-6 flex justify-end space-x-3">
+            <button onclick="closeModal()" class="border px-4 py-2 rounded-lg">Close</button>
+            <button onclick="deleteCurrentEmployee()" class="bg-red-600 text-white px-4 py-2 rounded-lg">
+                Delete
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let employees = [];
+let filtered = [];
+let currentId = null;
+
+const tableBody = document.getElementById("table-body");
+const loading = document.getElementById("loading");
+const empty = document.getElementById("empty");
+const tableWrapper = document.getElementById("table-wrapper");
+const employeeCount = document.getElementById("employee-count");
+const searchInput = document.getElementById("search-input");
+
+document.addEventListener("DOMContentLoaded", () => {
+    fetchEmployees();
+    searchInput.addEventListener("input", filterEmployees);
+    document.getElementById("refresh-btn").addEventListener("click", fetchEmployees);
+});
+
+async function fetchEmployees() {
+    loading.classList.remove("hidden");
+    tableWrapper.classList.add("hidden");
+    empty.classList.add("hidden");
+
+    const res = await fetch("/api/employees/");
+    const data = await res.json();
+
+    employees = data;
+    filtered = data;
+
+    renderTable();
+}
+
+function renderTable() {
+    tableBody.innerHTML = "";
+
+    employeeCount.textContent = employees.length;
+
+    if (filtered.length === 0) {
+        loading.classList.add("hidden");
+        empty.classList.remove("hidden");
+        return;
+    }
+
+    filtered.forEach(emp => {
+        const row = document.createElement("tr");
+        row.className = "employee-row";
+
+        row.innerHTML = `
+            <td class="px-6 py-4">#${emp.id}</td>
+            <td class="px-6 py-4">${emp.full_name}</td>
+            <td class="px-6 py-4">${emp.email}</td>
+            <td class="px-6 py-4">${emp.phone}</td>
+            <td class="px-6 py-4">${emp.location || "-"}</td>
+            <td class="px-6 py-4">${emp.source}</td>
+            <td class="px-6 py-4 space-x-3">
+                <button onclick="viewEmployee(${emp.id})" class="text-blue-600">View</button>
+                <button onclick="deleteEmployee(${emp.id})" class="text-red-600">Delete</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    loading.classList.add("hidden");
+    tableWrapper.classList.remove("hidden");
+}
+
+function filterEmployees() {
+    const q = searchInput.value.toLowerCase();
+
+    filtered = employees.filter(e =>
+        e.full_name.toLowerCase().includes(q) ||
+        e.email.toLowerCase().includes(q) ||
+        (e.location || "").toLowerCase().includes(q) ||
+        e.phone.includes(q)
+    );
+
+    renderTable();
+}
+
+async function viewEmployee(id) {
+    currentId = id;
+    const res = await fetch(`/api/employees/${id}/`);
+    const e = await res.json();
+
+    document.getElementById("modal-content").innerHTML = `
+        <div><b>Name:</b> ${e.full_name}</div>
+        <div><b>Email:</b> ${e.email}</div>
+        <div><b>Phone:</b> ${e.phone}</div>
+        <div><b>Location:</b> ${e.location || "-"}</div>
+        <div><b>Source:</b> ${e.source}</div>
+        <div><b>LinkedIn:</b> ${e.linkedin_url || "-"}</div>
+        <div class="col-span-2"><b>Work Experience:</b><br>${e.work_experience || "-"}</div>
+        <div class="col-span-2"><b>Notes:</b><br>${e.notes || "-"}</div>
+    `;
+
+    document.getElementById("modal").classList.remove("hidden");
+}
+
+function closeModal() {
+    document.getElementById("modal").classList.add("hidden");
+}
+
+async function deleteEmployee(id) {
+    if (!confirm("Are you sure?")) return;
+
+    await fetch(`/api/delete-employee/${id}/`, { method: "DELETE" });
+    fetchEmployees();
+}
+
+function deleteCurrentEmployee() {
+    if (currentId) {
+        deleteEmployee(currentId);
+        closeModal();
+    }
+}
+</script>
+
+</body>
+</html>

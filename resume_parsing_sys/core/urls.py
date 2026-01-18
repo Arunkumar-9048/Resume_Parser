@@ -22,5 +22,6 @@ urlpatterns = [
     
 # write your urls here.
 path('',IndexTemplate.as_view(),name='index'),
+path('employee',EmployeeTemplate.as_view(),name='employee')
 
 ]

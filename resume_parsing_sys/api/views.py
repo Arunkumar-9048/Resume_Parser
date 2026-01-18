@@ -1,7 +1,8 @@
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework import status
-from core.models import Resume, Candidate
+from core.models import Resume, Candidate, Employee
 from .serializer import CandidateSerializer, EmployeeSerializer
 from .utils import extract_text, parse_resume
 
@@ -50,3 +51,27 @@ class EmployeeCreateAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
+class EmployeeDetailAPIView(APIView):
+    def get(self, request, pk):
+        employee = get_object_or_404(Employee, pk=pk)
+        serializer = EmployeeSerializer(employee)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+class EmployeeListAPIView(APIView):
+    def get(self, request):
+        employees = Employee.objects.all().order_by('-id')
+        serializer = EmployeeSerializer(employees, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK) 
+    
+class EmployeeDeleteAPIView(APIView):
+    def delete(self, request, id):
+        employee = get_object_or_404(Employee, id=id)
+        employee.delete()
+
+        return Response(
+            {
+                "success": True,
+                "message": "Employee deleted successfully"
+            },
+            status=status.HTTP_200_OK
+        )
