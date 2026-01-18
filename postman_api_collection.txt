@@ -1,0 +1,67 @@
+1. Get All Employees
+    Method: GET
+    Endpoint: /api/employees/
+    Description: Fetches a list of all employees stored in the system.
+    Sample Response:
+
+        [
+        {
+            "id": 1,
+            "full_name": "John Doe",
+            "email": "john@example.com",
+            "phone": "9876543210",
+            "location": "Mumbai",
+            "work_experience": "5 years",
+            "skills": "Python, Django, JavaScript"
+        }
+        ]
+
+2. Get Single Employee
+    Method: GET
+    Endpoint: /api/employees/:id/
+    Description: Fetches details of a single employee by their ID.
+    Sample Response:
+
+        {
+        "id": 1,
+        "full_name": "John Doe",
+        "email": "john@example.com",
+        "phone": "9876543210",
+        "location": "Mumbai",
+        "work_experience": "5 years",
+        "skills": "Python, Django, JavaScript"
+        }
+
+
+3. Create Employee
+    Method: POST
+    Endpoint: /api/create-employee/
+    Description: Adds a new employee to the system.
+    Request Body (JSON):
+
+        {
+        "full_name": "Jane Smith",
+        "email": "jane@example.com",
+        "phone": "9876543210",
+        "location": "Bangalore",
+        "work_experience": "3 years",
+        "skills": "HTML, CSS, JavaScript"
+        }
+
+    Sample Response:
+
+        {
+        "message": "Employee created successfully",
+        "employee_id": 2
+        }
+
+
+4. Delete Employee
+    Method: DELETE
+    Endpoint: /api/employees/:id/delete/
+    Description: Deletes an employee by their ID.
+    Sample Response:
+
+        {
+        "message": "Employee deleted successfully"
+        }
